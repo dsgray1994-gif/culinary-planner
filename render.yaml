@@ -23,7 +23,7 @@ services:
     name: culinary-planner-web
     runtime: static
     rootDir: web
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: dist
     routes:
       - type: rewrite
