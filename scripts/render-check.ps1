@@ -40,10 +40,13 @@ Check-Step 'Web URL responds' {
   }
 }
 
-Check-Step 'API /health returns ok=true' {
+Check-Step 'API /health returns ok=true and db ready' {
   $health = Invoke-RestMethod -Uri "$ApiBase/health" -Method GET -TimeoutSec 45
   if (-not $health.ok) {
     throw "Health response did not contain ok=true. Response: $($health | ConvertTo-Json -Depth 10)"
+  }
+  if ($null -ne $health.db -and -not $health.db.ready) {
+    throw "Database not ready. Health: $($health | ConvertTo-Json -Depth 10)"
   }
 }
 

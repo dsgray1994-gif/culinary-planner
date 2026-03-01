@@ -12,6 +12,8 @@ from .storage_pg import ProjectStore
 
 app = FastAPI(title="Culinary Planner API")
 store = ProjectStore()
+store_ready = False
+store_error: str | None = None
 
 origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "*").split(",") if origin.strip()]
 app.add_middleware(
@@ -55,16 +57,32 @@ class AiStepRequest(BaseModel):
 
 @app.on_event("startup")
 def startup() -> None:
-    store.init()
+    global store_ready, store_error
+    try:
+        store.init()
+        store_ready = True
+        store_error = None
+    except Exception as exc:
+        store_ready = False
+        store_error = str(exc)
+
+
+def _ensure_store_ready() -> None:
+    if not store_ready:
+        detail = "Database is not configured or reachable. Set DATABASE_URL in Render and redeploy API."
+        if store_error:
+            detail = f"{detail} Last error: {store_error}"
+        raise HTTPException(status_code=503, detail=detail)
 
 
 @app.get("/health")
-def health() -> dict[str, bool]:
-    return {"ok": True}
+def health() -> dict[str, Any]:
+    return {"ok": True, "db": {"ready": store_ready, "error": store_error}}
 
 
 @app.get("/projects")
 def list_projects() -> dict[str, Any]:
+    _ensure_store_ready()
     return {"projects": store.list_projects()}
 
 
@@ -75,6 +93,7 @@ def list_projects_alias() -> dict[str, Any]:
 
 @app.post("/projects")
 def create_project(payload: ProjectCreate) -> dict[str, Any]:
+    _ensure_store_ready()
     return store.create_project(payload.name, payload.json)
 
 
@@ -85,6 +104,7 @@ def create_project_alias(payload: ProjectCreate) -> dict[str, Any]:
 
 @app.get("/projects/{project_id}")
 def get_project(project_id: str) -> dict[str, Any]:
+    _ensure_store_ready()
     project = store.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -98,6 +118,7 @@ def get_project_alias(project_id: str) -> dict[str, Any]:
 
 @app.put("/projects/{project_id}")
 def update_project(project_id: str, payload: ProjectUpdate) -> dict[str, bool]:
+    _ensure_store_ready()
     if not store.update_project(project_id, payload.name, payload.json):
         raise HTTPException(status_code=404, detail="Project not found")
     return {"ok": True}
@@ -110,6 +131,7 @@ def update_project_alias(project_id: str, payload: ProjectUpdate) -> dict[str, b
 
 @app.delete("/projects/{project_id}")
 def delete_project(project_id: str) -> dict[str, bool]:
+    _ensure_store_ready()
     if not store.delete_project(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
     return {"ok": True}
