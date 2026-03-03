@@ -3,9 +3,10 @@ param(
   [string]$CommitMessage = "Deploy update",
   [string]$ApiBase,
   [string]$WebBase,
+  [string]$CoolifyUrl = "https://app.coolify.io",
   [switch]$SkipBootstrap,
   [switch]$SkipPublish,
-  [switch]$SkipOpenRender
+  [switch]$SkipOpenCoolify
 )
 
 $ErrorActionPreference = 'Stop'
@@ -66,16 +67,17 @@ if (-not $SkipPublish) {
   }
 }
 
-if (-not $SkipOpenRender) {
-  Step 'Open Render Blueprint deploy page' {
-    powershell -ExecutionPolicy Bypass -File (Script-Path 'deploy-render.ps1')
+if (-not $SkipOpenCoolify) {
+  Step 'Open Coolify dashboard' {
+    powershell -ExecutionPolicy Bypass -File (Script-Path 'deploy-coolify.ps1') -CoolifyUrl $CoolifyUrl
   }
 }
 
-Write-Host "`nManual Render step required:" -ForegroundColor Yellow
-Write-Host '1) In Render API service env, set DATABASE_URL to your existing Postgres URL.'
-Write-Host '2) Set OPENAI_API_KEY.'
-Write-Host '3) Redeploy API and Web services.'
+Write-Host "`nManual Coolify step required:" -ForegroundColor Yellow
+Write-Host '1) Create a new Docker Compose resource from this repository.'
+Write-Host '2) Use docker-compose.yml at repo root.'
+Write-Host '3) Set env vars: POSTGRES_PASSWORD, OPENAI_API_KEY, CORS_ORIGINS, VITE_API_BASE.'
+Write-Host '4) Deploy and assign your public domain to the web service.'
 
 if ($ApiBase -and $WebBase) {
   Step 'Post-deploy smoke check' {

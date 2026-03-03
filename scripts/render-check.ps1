@@ -13,7 +13,7 @@ function Normalize-BaseUrl([string]$url) {
 $ApiBase = Normalize-BaseUrl $ApiBase
 $WebBase = Normalize-BaseUrl $WebBase
 
-Write-Host "== Culinary Planner Render Check ==" -ForegroundColor Cyan
+Write-Host "== Culinary Planner Deployment Check ==" -ForegroundColor Cyan
 Write-Host "API: $ApiBase"
 Write-Host "WEB: $WebBase"
 
@@ -58,7 +58,7 @@ Check-Step 'API list projects endpoint' {
 }
 
 $projectId = $null
-$projectName = "RenderCheck-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+$projectName = "DeployCheck-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 
 Check-Step 'API create project endpoint' {
   $created = Invoke-RestMethod -Uri "$ApiBase/projects" -Method POST -ContentType 'application/json' -Body (@{ name = $projectName } | ConvertTo-Json)
@@ -106,5 +106,5 @@ if ($allGood) {
   exit 0
 }
 
-Write-Host 'One or more checks failed. Review Render service logs and env vars.' -ForegroundColor Yellow
+Write-Host 'One or more checks failed. Review service logs and env vars.' -ForegroundColor Yellow
 exit 1

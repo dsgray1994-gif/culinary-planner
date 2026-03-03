@@ -69,7 +69,7 @@ def startup() -> None:
 
 def _ensure_store_ready() -> None:
     if not store_ready:
-        detail = "Database is not configured or reachable. Set DATABASE_URL in Render and redeploy API."
+        detail = "Database is not configured or reachable. Set DATABASE_URL in Coolify (or your host) and redeploy API."
         if store_error:
             detail = f"{detail} Last error: {store_error}"
         raise HTTPException(status_code=503, detail=detail)
