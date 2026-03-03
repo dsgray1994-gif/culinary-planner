@@ -9,6 +9,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ScriptDir = Split-Path -Parent $PSCommandPath
+$RepoRoot = Split-Path -Parent $ScriptDir
+Set-Location $RepoRoot
 
 function Step($name, [scriptblock]$action) {
   Write-Host "`n== $name ==" -ForegroundColor Cyan
@@ -32,13 +35,17 @@ function Ensure-Origin([string]$url) {
   }
 }
 
+function Script-Path([string]$name) {
+  return Join-Path $ScriptDir $name
+}
+
 Step 'Doctor checks' {
-  powershell -ExecutionPolicy Bypass -File .\scripts\doctor.ps1
+  powershell -ExecutionPolicy Bypass -File (Script-Path 'doctor.ps1')
 }
 
 if (-not $SkipBootstrap) {
   Step 'Bootstrap dependencies' {
-    powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1
+    powershell -ExecutionPolicy Bypass -File (Script-Path 'bootstrap.ps1')
   }
 }
 
@@ -54,14 +61,14 @@ if (-not $SkipPublish) {
       Write-Host 'No local changes to commit; skipping publish step.' -ForegroundColor Yellow
     }
     else {
-      powershell -ExecutionPolicy Bypass -File .\scripts\publish.ps1 -m $CommitMessage
+      powershell -ExecutionPolicy Bypass -File (Script-Path 'publish.ps1') -m $CommitMessage
     }
   }
 }
 
 if (-not $SkipOpenRender) {
   Step 'Open Render Blueprint deploy page' {
-    powershell -ExecutionPolicy Bypass -File .\scripts\deploy-render.ps1
+    powershell -ExecutionPolicy Bypass -File (Script-Path 'deploy-render.ps1')
   }
 }
 
@@ -72,7 +79,7 @@ Write-Host '3) Redeploy API and Web services.'
 
 if ($ApiBase -and $WebBase) {
   Step 'Post-deploy smoke check' {
-    powershell -ExecutionPolicy Bypass -File .\scripts\render-check.ps1 -ApiBase $ApiBase -WebBase $WebBase
+    powershell -ExecutionPolicy Bypass -File (Script-Path 'render-check.ps1') -ApiBase $ApiBase -WebBase $WebBase
   }
 }
 else {
